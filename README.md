@@ -1,3 +1,4 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/harounbensaadi/QuickSelect/HEAD?urlpath=https%3A%2F%2Fgithub.com%2Fharounbensaadi%2FQuickSelect%2Fblob%2Fmain%2Fnotebook.ipynb)
 # QuickSelect
 A user-friendly interface for simplified well selection across multiple plate configurations in a Python environment.
 
