@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <title>QuickSelect: Rapid Selection Interface for Lab Plates</title>
+    <meta name="author" content="Haroun Taki Eddine Bensaadi">
+    <meta name="description" content="QuickSelect: A rapid selection interface for efficient lab plate configuration and liquid handling.">
+    <meta name="email" content="hte.bensaadi@gmail.com">
+    
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+
+        .plate {
+            display: grid;
+            width: 600px;
+            height: 400px;
+            grid-gap: 15px;
+            padding: 40px;
+            margin: 10px 0;
+            user-select: none;
+            border: 3.5px solid black;
+            border-radius: 20px;
+        }
+
+        .well {
+            border-radius: 50%;
+            border: 1.5px solid #555;
+            text-align: center;
+            line-height: 30px;
+            user-select: none;
+            background-color: #ddd;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+            opacity: 0.90;
+        }
+
+        .well:hover {
+            border: 3.5px solid #006cfa;
+            background-color: #d4e7ff;
+
+        }
+
+        .bottom-buttons-container {
+            width: fit-content;
+            padding: 10px;
+        }
+
+        .bottom-buttons-container button {
+            font-size: 14px;
+            padding: 8px 12px;
+            margin-right: 15px;
+            background-color: #d4e7ff;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            transition: transform 0.3s ease;
+            user-select: none;
+        }
+
+        .bottom-buttons-container button:hover {
+            background-color: #c6d9ff;
+            border: 1px solid #006cfa;
+        }
+
+        .bottom-buttons-container button.clicked {
+            border: 3.5px solid #006cfa !important;
+            background-color: #d4e7ff !important;
+        }
+
+        hr {
+            margin: 10px 5px 5px 5px;
+            border: none;
+            height: 2px;
+            width: 910px;
+            background-color: #ddd;
+            opacity: 0.45;
+        }
+
+        .liquid-container {
+            display: grid;
+            grid-template-columns: 40px 5px auto 5px 40px;
+            width: 720px;
+            padding: 10px;
+            gap: 10px;
+            margin-left: auto;
+            margin-right: auto;
+            justify-items: center;
+            align-items: center;
+
+        }
+
+        .liquid-column {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-remove-button-column {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-remove-button {
+            background-color: #d4e7ff;
+            border: 2px dotted #006cfa;
+            color: #555;
+            font-size: 18px;
+            width: 40px;
+            padding: 20px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.15s, color 0.15s;
+            position: relative;
+        }
+
+        .add-remove-button:hover {
+            background-color: #c6d9ff;
+        }
+
+        .add-remove-button:active {
+            background-color: #c6d9ff;
+        }
+
+        .liquid-button {
+            background-color: #d4e7ff;
+            border: none;
+            color: #000;
+            font-size: 14px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            padding-right: 30px;
+            padding-left: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            position: relative;
+            user-select: none;
+            align-self: flex-start;
+        }
+
+        .liquid-button.selected {
+            background-color: #006cfa;
+            color: #fff;
+        }
+
+        .liquid-button.selected:hover {
+            background-color: #006cfa;
+        }
+
+        .liquid-button:hover {
+            background-color: #c6d9ff;
+        }
+
+        .circle {
+            width: 13px;
+            height: 13px;
+            background-color: transparent;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 12px;
+            opacity: 0.90;
+
+        }
+
+        .vertical-line {
+            border-left: 3px solid #ddd;
+            border-radius: 20px;
+            height: 100%;
+            opacity: 0.45;
+        }
+
+        .plate-container {
+            position: relative;
+            margin-right: 20px;
+        }
+
+        .selection-rectangle {
+            display: none; 
+            position: absolute;
+            border: 2px solid #006cfa;
+            background-color: rgba(0, 108, 250, 0.1);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .plate-and-code-container {
+            display: flex;
+        }
+
+        .code-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            width: 320px;
+            height: auto;
+            margin-top: 15px;
+            margin-left: 10px;
+        }
+
+        .code-container {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            background-color: #282c34;
+            user-select: none;
+            color: #9CDCFE;
+            padding: 20px;
+            margin-top: -3px;
+            border-radius: 5px;
+            white-space: pre;
+            overflow-x: auto;
+            overflow-y: auto;
+            box-sizing: border-box;
+            height: 435px;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            background-color: #1e1e1e;
+            padding: 5px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+
+        .code-tab {
+            background: none;
+            border: 2px solid transparent;
+            color: #d4d4d4;
+            user-select: none;
+            padding: 5px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 5px;
+            position: relative;
+        }
+
+        .code-tab.active {
+            border-color: transparent;
+            background-color: #1e1e1e;
+        }
+
+        .code-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #006cfa;
+        }
+
+        .code-tab:hover {
+            color: #69aaff;
+            background-color: #333;
+        }
+
+        .copy-button {
+            position: relative;
+            background-color: transparent;
+            color: #d4d4d4;
+            font-size: 16px;
+            border: none;
+            padding: 5px;
+            user-select: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-left: 60px;
+        }
+
+        .copy-button .fas {
+            transition: color 0.3s;
+        }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: -12.5;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            background-color: #006cfa;
+            color: white;
+            padding: 5px;
+            user-select: none;
+            border-radius: 4px;
+            font-size: 13px;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .copy-button:hover .tooltip {
+            display: block;
+        }
+
+        .copy-button.clicked .fa-copy {
+            display: none;
+        }
+
+        .copy-button.clicked .fa-check {
+            display: inline;
+            color: #006cfa;
+        }
+
+        .copy-button.clicked .tooltip {
+            background-color: #333;
+        }
+
+        .tooltip.copied-tooltip {
+            background-color: #006cfa;
+            color: white;
+        }
+    </style>
+
+</head>
+
+<body>
+    
+    <!-- <div id="columnCountContainer" data-column-count="12" style="display: none;"></div>
+    <div id="rowCountContainer" data-row-count="8" style="display: none;"></div> -->
+
+    <div id="columnCountContainer" data-column-count="{{ columnCountFromPython }}" style="display: none;"></div>
+    <div id="rowCountContainer" data-row-count="{{ rowCountFromPython }}" style="display: none;"></div>
+
+    <div class="container">
+
+        <div class="liquid-container">
+            <div class="add-remove-button-column" style="margin-right: 15px;">
+                <button class="add-remove-button" id="minusBtn" onclick="decreaseCount()">-</button>
+            </div>
+
+            <div class="vertical-line"></div>
+
+            <div id="liquid-type-container" class="liquid-column"></div>
+
+            <div class="vertical-line"></div>
+
+            <div class="add-remove-button-column" style="margin-left: 15px;">
+                <button class="add-remove-button" id="plusBtn" onclick="increaseCount()">+</button>
+            </div>
+        </div>
+
+        <div class="plate-and-code-container">
+            <div class="plate-container">
+                <div class="plate"></div>
+                <div class="selection-rectangle"></div>
+            </div>
+
+            <div class="code-wrapper">
+                <div class="code-header">
+                    <button class="code-tab" onclick="selectTab('python')">Python</button>
+                    <button class="code-tab" onclick="selectTab('javascript')">JavaScript</button>
+                    <button class="copy-button" onclick="copyToClipboard(this)">
+                        <i class='fas fa-copy'></i>
+                        <i class='fas fa-check' style='display:none;'></i>
+                        <span class="tooltip">Copy</span>
+                    </button>
+
+                </div>
+                <div class="code-container" id="jsonOutput"></div>
+            </div>
+
+        </div>
+
+        <hr>
+
+        <div class="bottom-buttons-container">
+            <button id="selectAllWells" onclick="selectAllWells()">Select All</button>
+            <button id="deselectAllWells" onclick="deselectAllWells()">Deselect All</button>
+            <button id="selectCurrentColumn" onclick="selectCurrentColumn()">Select Column</button>
+            <button id="selectCurrentRow" onclick="selectCurrentRow()">Select Row</button>
+        </div>
+
+    </div>
+
+
+    <script>
+
+        var columnCountContainer = document.getElementById('columnCountContainer');
+        var rowCountContainer = document.getElementById('rowCountContainer');
+        
+        var columnCount = parseInt(columnCountContainer.getAttribute('data-column-count'), 10);
+        var rowCount = parseInt(rowCountContainer.getAttribute('data-row-count'), 10);
+        
+        function updatePlateAndWells() {
+            var plateElement = document.querySelector(".plate");
+
+            var plateWidth = plateElement.offsetWidth;
+            var plateHeight = plateElement.offsetHeight;
+
+            var style = getComputedStyle(plateElement);
+            var gridGap = parseFloat(style.gap) || parseFloat(style.rowGap);
+            var padding = parseFloat(style.padding);
+
+            var wellDiameter = Math.min(
+                (plateWidth + 6.5 - padding * 2 - ((columnCount - 1) * gridGap)) / columnCount,
+                (plateHeight + 6.5 - padding * 2 - ((rowCount - 1) * gridGap)) / rowCount
+            );
+
+            console.log(wellDiameter)
+
+            plateElement.style.gridTemplateColumns = `repeat(${columnCount}, ${wellDiameter}px)`;
+            plateElement.style.gridTemplateRows = `repeat(${rowCount}, ${wellDiameter}px)`;
+
+            var wells = document.querySelectorAll(".well");
+            
+            wells.forEach(function (well) {
+                well.style.width = `${wellDiameter}px`;
+                well.style.height = `${wellDiameter}px`;
+                well.style.lineHeight = `${wellDiameter}px`;
+            });
+        }
+
+
+        function generateWells() {
+            var plateElement = document.querySelector(".plate");
+
+            plateElement.innerHTML = '';
+
+            for (var row = 0; row < rowCount; row++) {
+                for (var col = 1; col <= columnCount; col++) {
+                    var wellId = String.fromCharCode('A'.charCodeAt(0) + row) + col;
+                    var wellElement = document.createElement("div");
+                    wellElement.id = wellId;
+                    wellElement.className = "well";
+                    wellElement.setAttribute("onclick", "selectWell('" + wellId + "')");
+                    plateElement.appendChild(wellElement);
+                }
+            }
+        }
+        updatePlateAndWells()
+        generateWells()
+
+        var currentSelectedWells = [];
+        var currentLiquidType = "liquid_1";
+        var lastSelectedWell = null;
+        var count = 10;
+
+        var colors = ["red", "blue", "green", "yellow", "magenta", "cyan", "orange", "purple", "lime", "teal", "pink", "maroon", "navy", "olive", "aqua", "coral", "indigo", "goldenrod", "darkgreen", "sienna", "slateblue", "chartreuse", "crimson", "darkviolet", "mediumspringgreen", "orangered", "mediumorchid", "mediumblue", "darkorange"];
+
+        var liquidColorMap = {};
+
+        for (var i = 0; i < 96; i++) {
+            var colorIndex = i % colors.length;
+            liquidColorMap["liquid_" + (i + 1)] = colors[colorIndex];
+        }
+
+        function selectWell(wellId) {
+            var wellElement = document.getElementById(wellId);
+            
+            if (!isWellSelected(wellId)) {
+                currentSelectedWells.push({ wellId: wellId, liquidType: currentLiquidType });
+                updateSelectedWellsDisplay();
+                wellElement.style.backgroundColor = liquidColorMap[currentLiquidType];
+                addWellElement(wellElement, currentLiquidType);
+                lastSelectedWell = wellId;
+            } else {
+                var index = getSelectedIndex(wellId);
+                currentSelectedWells.splice(index, 1);
+                updateSelectedWellsDisplay();
+                wellElement.style.backgroundColor = "";
+                wellElement.innerHTML = "";
+                if (lastSelectedWell === wellId) {
+                    lastSelectedWell = null;
+                }
+            }
+            // var current_well_selection = getCurrentSelectedWells();
+            // IPython.notebook.kernel.execute("current_well_selection = " + JSON.stringify(current_well_selection));
+        }
+
+        function isWellSelected(wellId) {
+            return currentSelectedWells.some(function (well) {
+                return well.wellId === wellId;
+            });
+        }
+
+        function getSelectedIndex(wellId) {
+            return currentSelectedWells.findIndex(function (well) {
+                return well.wellId === wellId;
+            });
+        }
+
+        function addWellElement(wellElement, liquidType) {
+            var span = document.createElement("span");
+            span.innerHTML = "&nbsp;";
+            span.style.color = liquidColorMap[liquidType];
+            wellElement.appendChild(span);
+        }
+
+        function increaseCount() {
+            if (count < 96) {
+                count++;
+                generateLiquidTypeButtons();
+            }
+        }
+
+        function decreaseCount() {
+            if (count > 1) {
+                count--;
+                generateLiquidTypeButtons();
+            }
+        }
+
+        function addButtonClickListener(buttonId) {
+            document.getElementById(buttonId).addEventListener('click', function (event) {
+                drawContentOverPlate();
+                var button = event.target;
+                button.style.backgroundColor = '#006cfa';
+                setTimeout(function () {
+                    button.style.backgroundColor = '#d4e7ff';
+                }, 150);
+            });
+        }
+
+        addButtonClickListener('minusBtn');
+        addButtonClickListener('plusBtn');
+        addButtonClickListener('selectAllWells');
+        addButtonClickListener('deselectAllWells');
+        addButtonClickListener('selectCurrentColumn');
+        addButtonClickListener('selectCurrentRow');
+
+        
+        generateLiquidTypeButtons();
+        drawContentOverPlate();
+
+        var isDragging = false;
+        var startX, startY;
+        var selectionRectangle;
+        var wellsAffectedByCurrentDrag = new Set();
+
+        document.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        
+        function generateLiquidTypeButtons() {
+            var liquidTypeContainer = document.getElementById("liquid-type-container");
+            liquidTypeContainer.innerHTML = "";
+
+            for (var i = 1; i <= count; i++) {
+                var button = document.createElement("button");
+                button.type = "button";
+                button.classList.add("liquid-button");
+                button.id = "liquid_" + i;
+
+                button.onclick = function () {
+                    updateWellsWIthLiquidType("liquid_" + this.id.split("liquid_")[1]);
+                    toggleButtonSelection(this);
+                };
+
+                var span = document.createElement("span");
+                span.innerHTML = "" + i;
+
+                var circle = document.createElement('span');
+                circle.classList.add('circle');
+
+                circle.style.backgroundColor = liquidColorMap["liquid_" + i];
+                button.appendChild(circle);
+                button.appendChild(span);
+
+                if (i === currentLiquidType.split("liquid_")[1]) {
+                    updateWellsWIthLiquidType(currentLiquidType);
+                    toggleButtonSelection(button);
+                }
+                liquidTypeContainer.appendChild(button);
+            }
+            document.getElementById(currentLiquidType).click();
+        }
+
+        function toggleButtonSelection(button) {
+            var buttons = document.getElementsByClassName("liquid-button");
+
+            for (var i = 0; i < buttons.length; i++) {
+                var currentButton = buttons[i];
+
+                if (currentButton === button) {
+                    currentButton.classList.add("selected");
+
+                } else {
+                    currentButton.classList.remove("selected");
+                }
+            }
+        }
+        function updateWellsWIthLiquidType(liquidType) {
+            currentLiquidType = liquidType;
+            currentSelectedWells.forEach(function (well) {
+                var wellElement = document.getElementById(well.wellId);
+                wellElement.innerHTML = "";
+                addWellElement(wellElement, liquidType);
+            });
+        }
+
+        // Bottom container
+
+        function getCurrentSelectedWells() {
+            return currentSelectedWells.map(function (well) {
+                return well.wellId + ' ' + well.liquidType;
+            });
+        }
+        function selectAllWells() {
+            var wellElements = document.getElementsByClassName("well");
+            for (var i = 0; i < wellElements.length; i++) {
+                var wellElement = wellElements[i];
+
+                if (!isWellSelected(wellElement.id)) {
+                    currentSelectedWells.push({ wellId: wellElement.id, liquidType: currentLiquidType });
+                    updateSelectedWellsDisplay();
+                    wellElement.style.backgroundColor = liquidColorMap[currentLiquidType];
+                    addWellElement(wellElement, currentLiquidType);
+                }
+            }
+            // var current_well_selection = getCurrentSelectedWells();
+            // IPython.notebook.kernel.execute("current_well_selection = " + JSON.stringify(current_well_selection));
+        }
+
+        function deselectAllWells() {
+            var wellElements = document.getElementsByClassName("well");
+
+            for (var i = 0; i < wellElements.length; i++) {
+                var wellElement = wellElements[i];
+                if (isWellSelected(wellElement.id)) {
+                    var index = getSelectedIndex(wellElement.id);
+                    currentSelectedWells.splice(index, 1);
+                    updateSelectedWellsDisplay();
+                    wellElement.style.backgroundColor = "";
+                    wellElement.innerHTML = "";
+                }
+            }
+            lastSelectedWell = null;
+            // var current_well_selection = getCurrentSelectedWells();
+            // IPython.notebook.kernel.execute("current_well_selection = " + JSON.stringify(current_well_selection));
+
+        }
+
+        function selectCurrentColumn() {
+            if (lastSelectedWell !== null) {
+                var lastSelectedColumn = lastSelectedWell.substring(1);
+                var wellElements = document.getElementsByClassName("well");
+
+                for (var i = 0; i < wellElements.length; i++) {
+                    var wellElement = wellElements[i];
+
+                    if (wellElement.id.substring(1) === lastSelectedColumn) {
+                        if (!isWellSelected(wellElement.id)) {
+                            currentSelectedWells.push({ wellId: wellElement.id, liquidType: currentLiquidType });
+                            updateSelectedWellsDisplay();
+                            wellElement.style.backgroundColor = liquidColorMap[currentLiquidType];
+                            addWellElement(wellElement, currentLiquidType);
+                        }
+                    }
+                }
+            }
+        }
+
+        function selectCurrentRow() {
+            if (lastSelectedWell !== null) {
+                var lastSelectedRow = lastSelectedWell.substring(0, 1);
+                var wellElements = document.getElementsByClassName("well");
+
+                for (var i = 0; i < wellElements.length; i++) {
+                    var wellElement = wellElements[i];
+
+                    if (wellElement.id.substring(0, 1) === lastSelectedRow) {
+                        if (!isWellSelected(wellElement.id)) {
+                            currentSelectedWells.push({ wellId: wellElement.id, liquidType: currentLiquidType });
+                            updateSelectedWellsDisplay();
+                            wellElement.style.backgroundColor = liquidColorMap[currentLiquidType];
+                            addWellElement(wellElement, currentLiquidType);
+                        }
+                    }
+                }
+            }
+        }
+
+        function clearContentOverPlate() {
+            var container = document.getElementById('content-above-plate-container');
+            if (container) {
+                container.remove();
+            }
+        }
+
+        function drawContentOverPlate() {
+            clearContentOverPlate();
+
+            var container = document.createElement('div');
+            container.id = 'content-above-plate-container';
+            document.body.appendChild(container);
+
+            var wellElements = document.querySelectorAll('.well');
+            var plateElement = document.querySelector('.plate');
+            var rectPlate = plateElement.getBoundingClientRect();
+            var leftX = rectPlate.left + 3.5 + 20;
+            var rightX = rectPlate.right - 3.5 - 20;
+            var topY = rectPlate.top + 3.5 + 20;
+            var bottomY = rectPlate.bottom - 3.5 - 20;
+
+            var dotRadius = 14;
+
+            var topLeftCornerDot = document.createElement('div');
+            topLeftCornerDot.style.position = 'absolute';
+            topLeftCornerDot.style.left = (leftX - dotRadius * 0.5) + 'px';
+            topLeftCornerDot.style.top = (topY - dotRadius * 0.5) + 'px';
+            topLeftCornerDot.style.width = dotRadius + 'px';
+            topLeftCornerDot.style.height = dotRadius + 'px';
+            topLeftCornerDot.style.backgroundColor = '#eee';
+            topLeftCornerDot.style.border = '2px solid #ccc';
+            topLeftCornerDot.style.borderRadius = '50%';
+            topLeftCornerDot.style.userSelect = 'none';
+            container.appendChild(topLeftCornerDot);
+
+            var bottomTextLeft = document.createElement('div');
+
+            bottomTextLeft.innerHTML = `<b>QuickSelect | standard ${columnCount * rowCount} well plate</b> — created by `;
+
+            var nameLink = document.createElement('a');
+            nameLink.textContent = "Haroun Bensaadi";
+            nameLink.href = "https://www.linkedin.com/in/h-bensaadi/";
+            nameLink.target = "_blank";
+            nameLink.style.color = "#888";
+            bottomTextLeft.appendChild(nameLink);
+            bottomTextLeft.style.position = 'absolute';
+            bottomTextLeft.style.left = (rectPlate.left - 180 + (rectPlate.width / 2)) + 'px';
+            bottomTextLeft.style.top = bottomY - 3.5 + 'px';
+            bottomTextLeft.style.fontFamily = 'Arial, sans-serif';
+            bottomTextLeft.style.fontSize = '11px';
+            bottomTextLeft.style.fontWeight = 'lighter';
+            bottomTextLeft.style.color = '#888';
+            bottomTextLeft.style.textAlign = 'center';
+            bottomTextLeft.style.userSelect = 'none';
+
+            nameLink.addEventListener('mouseover', function () {
+                nameLink.style.textDecoration = 'underline';
+                nameLink.style.color = "#0066ff";
+            });
+
+            nameLink.addEventListener('mouseout', function () {
+                nameLink.style.textDecoration = 'none';
+                nameLink.style.color = "#888";
+
+            });
+            container.appendChild(bottomTextLeft);
+
+            for (var i = 0; i < columnCount; i++) {
+                var wellRect = wellElements[i].getBoundingClientRect();
+
+                var text = document.createElement('div');
+                text.textContent = (i + 1).toString();
+                text.style.position = 'absolute';
+
+                if ((i + 1).toString().length === 1) {
+                    text.style.left = (wellRect.left - 4 + (wellRect.width / 2)) + 'px';
+                } else {
+                    text.style.left = (wellRect.left - 8 + (wellRect.width / 2)) + 'px';
+                }
+                text.style.top = topY - 8 + 'px';
+                text.style.fontFamily = 'Roboto Mono, monospace';
+                text.style.fontSize = '16px';
+                text.style.fontWeight = 'lighter';
+                text.style.color = '#333';
+                text.style.textAlign = 'center';
+                text.style.userSelect = 'none';
+                container.appendChild(text);
+            }
+
+            for (var j = 0; j < rowCount; j++) {
+                var wellRect = wellElements[j * columnCount].getBoundingClientRect();
+
+                var text = document.createElement('div');
+                text.textContent = String.fromCharCode(65 + j);
+                text.style.position = 'absolute';
+                text.style.left = leftX - 4 + 'px';
+                text.style.top = (wellRect.top - 8 + (wellRect.height / 2)) + 'px';
+                text.style.fontFamily = 'Roboto Mono, monospace';
+                text.style.fontSize = '16px';
+                text.style.fontWeight = 'lighter';
+                text.style.color = '#333';
+                text.style.userSelect = 'none';
+                container.appendChild(text);
+            }
+        }
+
+        function getWellCoordinates() {
+            var wellCoordinates = [];
+            var wellElements = document.querySelectorAll('.well');
+
+            wellElements.forEach(function (wellElement) {
+                var rect = wellElement.getBoundingClientRect();
+                var centerX = rect.left + rect.width / 2;
+                var centerY = rect.top + rect.height / 2;
+                wellCoordinates.push({ x: centerX, y: centerY });
+            });
+            return wellCoordinates;
+        }
+
+        function handleMouseDown(event) {
+            var isDraggableArea = event.target.closest('.plate-container') || event.target.closest('.character-container');
+
+            if (isDraggableArea) {
+                isDragging = true;
+                startX = event.clientX;
+                startY = event.clientY;
+                selectionRectangle = document.createElement('div');
+                selectionRectangle.className = 'selection-rectangle';
+                document.body.appendChild(selectionRectangle);
+                selectionRectangle.style.display = 'block';
+                updateSelectionRectangle(startX, startY, 0, 0);
+            }
+        }
+
+        function handleMouseMove(event) {
+            if (isDragging) {
+                var width = event.clientX - startX;
+                var height = event.clientY - startY;
+                updateSelectionRectangle(startX, startY, width, height);
+                selectWellsWithinRectangle();
+            }
+        }
+        function handleMouseUp(event) {
+            if (isDragging) {
+                isDragging = false;
+                if (selectionRectangle) {
+                    selectionRectangle.style.width = '0px';
+                    selectionRectangle.style.height = '0px';
+                    selectionRectangle.style.backgroundColor = 'transparent';
+                    selectionRectangle.style.display = 'none';
+                }
+            }
+        }
+
+        function updateSelectionRectangle(x, y, width, height) {
+            selectionRectangle.style.left = Math.min(x, x + width) + 'px';
+            selectionRectangle.style.top = Math.min(y, y + height) + 'px';
+            selectionRectangle.style.width = Math.abs(width) + 'px';
+            selectionRectangle.style.height = Math.abs(height) + 'px';
+        }
+
+
+        function selectWellsWithinRectangle() {
+            var rect = selectionRectangle.getBoundingClientRect();
+            var wellElements = document.querySelectorAll('.well');
+            var wellsInCurrentDrag = new Set();
+
+            wellElements.forEach(function (wellElement) {
+                var wellRect = wellElement.getBoundingClientRect();
+                var wellId = wellElement.id;
+                var isWithinSelection = !(rect.right < wellRect.left || rect.left > wellRect.right || rect.bottom < wellRect.top || rect.top > wellRect.bottom);
+
+                if (isWithinSelection) {
+                    wellsInCurrentDrag.add(wellId);
+                    var isSelected = currentSelectedWells.some(well => well.wellId === wellId);
+                    if (!isSelected) {
+                        currentSelectedWells.push({ wellId: wellId, liquidType: currentLiquidType });
+                        updateSelectedWellsDisplay();
+                        wellElement.style.backgroundColor = liquidColorMap[currentLiquidType];
+                        addWellElement(wellElement, currentLiquidType);
+                        wellsAffectedByCurrentDrag.add(wellId);
+                    } else {
+                        var index = currentSelectedWells.findIndex(well => well.wellId === wellId);
+                        if (currentSelectedWells[index].liquidType !== currentLiquidType) {
+                            currentSelectedWells[index].liquidType = currentLiquidType;
+                            wellElement.style.backgroundColor = liquidColorMap[currentLiquidType];
+                            wellElement.innerHTML = '';
+                            addWellElement(wellElement, currentLiquidType);
+                            updateSelectedWellsDisplay();
+                        }
+                    }
+                }
+            });
+
+            currentSelectedWells = currentSelectedWells.filter(well => {
+                if (!wellsInCurrentDrag.has(well.wellId) && wellsAffectedByCurrentDrag.has(well.wellId)) {
+                    document.getElementById(well.wellId).style.backgroundColor = '';
+                    document.getElementById(well.wellId).innerHTML = '';
+                    wellsAffectedByCurrentDrag.delete(well.wellId);
+                    return false;
+                }
+                return true;
+            });
+            updateSelectedWellsDisplay();
+
+        }
+
+        window.onload = function () {
+            selectTab('python');
+        };
+
+        function updateSelectedWellsDisplay(language = 'python') {
+            var jsonOutput = document.getElementById('jsonOutput');
+            var outputStr = language === 'python' ?
+                formatPython(currentSelectedWells) : formatJavaScript(currentSelectedWells);
+            jsonOutput.innerHTML = outputStr;
+            
+            // updateSelectionInPython();
+        }
+
+        // function updateSelectionInPython() {
+
+        //     var pythonStr = formatPythonForClipboard(currentSelectedWells);
+        //     IPython.notebook.kernel.execute("pythonStr = " + JSON.stringify(pythonStr));
+
+        //     var current_well_selection = getCurrentSelectedWells(); 
+        //     console.log("Updating selection in Python:", current_well_selection);
+
+        //     var pythonCode = `WellPlateRenderer.update_selection(${JSON.stringify(current_well_selection)})`;
+        //     try {
+        //         IPython.notebook.kernel.execute(pythonCode);
+        //     } catch (e) {
+        //         console.error("Error executing Python code from JavaScript:", e);
+        //     }
+        // }
+
+        function formatPython(data) {
+            var variableNameColor = "#D4D4D4";
+            var valueColor = "#CE9178";
+            var syntaxColor = "#D4D4D4";
+            var keywordColor = "#9CDCFE";
+
+            var outputStr = `<span style="color: ${keywordColor};">currentSelectedWells</span> <span style="color: ${syntaxColor};">=</span> <span style="color: ${syntaxColor};">{</span><br>`;
+
+            data.forEach(({ wellId, liquidType }) => {
+                outputStr += `    <span style="color: ${variableNameColor};">"${wellId}"</span>: <span style="color: ${valueColor};">"${liquidType}"</span>,<br>`;
+            });
+
+            outputStr += `<span style="color: ${syntaxColor};">}</span>`;
+
+            return outputStr;
+        }
+
+        function formatJavaScript(data) {
+            var variableTypeColor = "#4EC9B0";
+            var variableNameColor = "#9CDCFE";
+            var valueColor = "#CE9178";
+            var syntaxColor = "#D4D4D4";
+            var outputStr = `<span style="color: ${variableTypeColor};">const</span> <span style="color: ${variableNameColor};">currentSelectedWells</span> <span style="color: ${syntaxColor};">=</span> <span style="color: ${syntaxColor};">{</span><br>`;
+
+            data.forEach(({ wellId, liquidType }) => {
+                outputStr += `    <span style="color: ${syntaxColor};">${wellId}</span>: <span style="color: ${valueColor};">"${liquidType}"</span>,<br>`;
+            });
+
+            outputStr += `<span style="color: ${syntaxColor};">};</span>`;
+
+            return outputStr;
+        }
+
+
+        updateSelectedWellsDisplay();
+
+        function selectTab(language) {
+            document.querySelectorAll('.code-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase() === language) {
+                    tab.classList.add('active');
+                }
+            });
+
+            updateSelectedWellsDisplay(language);
+        }
+
+        function copyToClipboard(button) {
+            var language = document.querySelector('.code-tab.active').textContent.toLowerCase();
+            var data = formatDataForClipboard(currentSelectedWells, language);
+
+            navigator.clipboard.writeText(data).then(() => {
+                var tooltip = button.querySelector('.tooltip');
+                button.classList.add('clicked');
+                tooltip.textContent = 'Copied!';
+                tooltip.classList.add('copied-tooltip');
+                button.querySelector('.fa-check').style.display = 'inline';
+                button.querySelector('.fa-copy').style.display = 'none';
+
+                setTimeout(() => {
+                    button.classList.remove('clicked');
+                    tooltip.textContent = 'Copy';
+                    tooltip.classList.remove('copied-tooltip');
+                    button.querySelector('.fa-check').style.display = 'none';
+                    button.querySelector('.fa-copy').style.display = 'inline';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy content: ', err);
+            });
+        }
+
+        function formatDataForClipboard(data, language) {
+            if (language === 'python') {
+                return formatPythonForClipboard(data);
+            } else if (language === 'javascript') {
+                return formatJavaScriptForClipboard(data);
+            } else {
+                console.error('Unknown language for formatting');
+                return '';
+            }
+        }
+
+        function formatPythonForClipboard(data) {
+            var pythonStr = 'currentSelectedWells = {\n';
+            data.forEach(({ wellId, liquidType }) => {
+                pythonStr += `    "${wellId}": "${liquidType}",\n`;
+            });
+            pythonStr += '}';
+            return pythonStr;
+        }
+
+        function formatJavaScriptForClipboard(data) {
+            var jsStr = 'var currentSelectedWells = {\n';
+            data.forEach(({ wellId, liquidType }) => {
+                jsStr += `    ${wellId}: "${liquidType}",\n`;
+            });
+            jsStr += '};';
+            return jsStr;
+        }
+
+    </script>
+
+</body>
+
+</html>
