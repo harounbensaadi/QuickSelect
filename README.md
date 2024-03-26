@@ -2,7 +2,7 @@
 # QuickSelect
 A user-friendly interface for simplified well selection across multiple plate configurations in a Python environment.
 
-### Online Jupyter Notebook
+#### Online Jupyter Notebook
 
 https://nbviewer.org/github/harounbensaadi/QuickSelect/blob/HEAD/notebook.ipynb
 
